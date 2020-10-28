@@ -1,0 +1,176 @@
+#include <vector>
+#include <algorithm>
+#include <iostream>
+#include <functional>
+#include <tuple>
+#include <string>
+#include <iterator>
+#include <fstream>
+using namespace std;
+
+struct Money {
+	int rub, kop;
+	Money(int x = 0, int y = 0) :rub(x), kop(y) {}
+	friend ostream& operator<<(ostream& out, Money& p) {
+		out << p.rub << ' ' << p.kop << endl;
+		return out;
+	}
+	friend istream& operator>>(istream& in, Money& p) {
+		in >> p.rub >> p.kop;
+		if (p.kop > 100) {
+			p.rub += p.kop / 100;
+			p.kop %= 100;
+		}
+		return in;
+	}
+	friend bool operator < (const Money& a, const Money& b) {
+		return tie(a.rub, a.kop) < tie(b.rub, b.kop);
+	}
+	friend bool operator > (const Money& a, const Money& b) { return b < a; }
+	friend bool operator <= (const Money& a, const Money& b) { return !(b < a); }
+	friend bool operator >= (const Money& a, const Money& b) { return !(a < b); }
+	friend bool operator == (const Money& a, const Money& b) { return !(a < b) && !(b < a); }
+	friend Money operator - (const Money& a, const Money& b) { 
+		Money c;
+		c.rub = a.rub - b.rub;
+		c.kop = a.kop - b.kop;
+		return c;
+	}
+	friend Money operator + (const Money& a, const Money& b) {
+		Money c;
+		c.rub = a.rub + b.rub;
+		c.kop = a.kop + b.kop;
+		if (c.kop > 100) {
+			c.rub += c.kop / 100;
+			c.kop %= 100;
+		}
+		return c;
+	}
+	friend Money operator / (const Money& a, const Money& b) {
+		Money c;
+		if (b.rub != 0 && b.kop != 0) {
+			c.rub = a.rub / b.rub;
+			c.kop = a.kop / b.kop;
+			return c;
+		}
+	}
+	friend Money operator * (const Money& a, const Money& b) {
+		Money c;
+		c.rub = a.rub * b.rub;
+		c.kop = a.kop * b.kop;
+		if (c.kop > 100) {
+			c.rub += c.kop / 100;
+			c.kop %= 100;
+		}
+		return c;
+	}
+};
+
+Money val, maxel;
+void viv(Money i) {
+	cout << i;
+}
+bool isOdd(Money i) {
+	return i.rub > val.rub;
+}
+bool ismax(Money i) {
+	return i == maxel;
+}
+bool cmpmxmn(const Money& a, const Money& b) {
+	if (a.rub != b.rub) return (a.rub > b.rub);
+	return (a.kop > b.kop);
+}
+bool cmpmnmx(const Money& a, const Money& b) {
+	if (a.rub != b.rub) return (a.rub < b.rub);
+	return (a.kop < b.kop);
+}
+class MultValue {
+private:
+	int Factor;   
+public:
+    MultValue(const int _Val) : Factor(_Val) {}
+	void operator ( ) (Money& elem) const {
+		elem.rub *= 3;
+		elem.kop *= 3;
+		if (elem.kop > 100) {
+			elem.rub += elem.kop / 100;
+			elem.kop %= 100;
+		}
+	}
+};
+template<typename T, typename Cmp>
+T oboalg(T f1, T l1, T f2, T l2, Cmp cmp) {
+	if (f1 == l1 || f2 == l2) return l1;
+	T a, b, t = l1;
+	for (l1--, l2--; l1 != f1; l1--) {
+		a = l1;
+		b = l2;
+		while ((a != f1) && (b != f2) && cmp(*a, *b)) {
+			a--;
+			b--;
+		}
+		if ((b == f2) && cmp(*a, *b))
+			return a;
+	}
+	return t;
+}
+int main(int argc, char* argv[]) {
+	locale::global(std::locale("RUS"));
+	string fn;
+	ifstream in;
+	if (argc > 1) in.open(argv[1]);
+	else {
+		cout << "" << endl;
+		cin >> fn;
+		in.open(fn);
+	}
+	int n; in >> n;
+	vector<Money> v;
+	for (int i = 0; i < n; i++) {
+		Money a; in >> a;
+		v.push_back(a);
+	}
+	cout << "3. Количество элементов больше заданного элемента (10 10): ";
+	in >> val;
+	int ans = count_if(v.begin(), v.end(), isOdd);
+	cout << ans << endl;
+	cout << "4. Значение максимальных элементов уменьшить на 10%" << endl;
+	maxel = *max_element(v.begin(), v.end());
+	for_each(v.begin(), v.end(), viv);
+	Money zam;
+	zam.rub = maxel.rub - (maxel.rub / 10);
+	zam.kop = maxel.kop - (maxel.kop / 10);
+	replace_if(v.begin(), v.end(), ismax, zam);
+	
+	for_each(v.begin(), v.end(), viv);
+	cout << "5. Удалим повторяющиеся элементы" << endl;
+	vector<Money>::iterator it;
+	it = unique(v.begin(), v.end());
+	v.resize(distance(v.begin(), it));
+	for_each(v.begin(), v.end(), viv);
+	cout << "6(1). Сортируем по возрастанию:" << endl;
+	sort(v.begin(), v.end(), cmpmnmx);
+	for_each(v.begin(), v.end(), viv);
+	cout << "6(2). Сортируем по убыванию:" << endl;
+	sort(v.begin(), v.end(), cmpmxmn);
+	for_each(v.begin(), v.end(), viv);
+	cout << "7. Найдем значение и индекс первого максимального: " << endl;
+	maxel = *max_element(v.begin(), v.end());
+	it = find(v.begin(), v.end(), maxel);
+	cout << "Первый равный элемент - " << *it << "является " << distance(v.begin(),it) << " в списке" << endl;
+	cout << "8. Каждый элемент увеличим в 3 раза: " << endl;
+	for_each(v.begin(), v.end(), MultValue(3));
+	for_each(v.begin(), v.end(), viv);
+	cout << "10. Покажем работу собсвенного обобщенного алгоритма" << endl;
+	int m; in >> m;
+	vector<Money> vsh;
+	for (int j = 0; j < m; j++) {
+		in >> val;
+		vsh.push_back(val);
+	}
+	sort(v.begin(), v.end(), cmpmnmx);
+	it = oboalg(v.begin(), v.end(), vsh.begin(), vsh.end(), [](Money a, Money b) { return (a == b); });
+	for_each(it, v.end(), viv);
+	cout << "Все задания были выполнены" << endl;
+	return 0;
+}
